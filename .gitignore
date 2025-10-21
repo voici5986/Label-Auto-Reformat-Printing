@@ -1,0 +1,42 @@
+# Python编译文件
+*.pyc
+*.pyo
+__pycache__/
+*.so
+
+# 虚拟环境
+venv/
+.venv/
+env/
+ENV/
+
+# PyInstaller打包文件
+*.spec
+build/
+dist/
+
+# 项目生成的文件
+*.pdf
+*.png
+
+# 配置文件（如果包含敏感信息）
+# settings.json
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
