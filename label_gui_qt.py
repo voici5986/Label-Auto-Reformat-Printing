@@ -17,7 +17,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, QUrl
 from PyQt6.QtGui import QPixmap, QFont, QColor, QIcon, QPainter
-from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 from PIL import Image
 import fitz  # PyMuPDF - 用于PDF转图片和PDF转PNG
 
@@ -63,6 +62,7 @@ LANGUAGES = {
         'error_no_printer': '未检测到可用的打印机！\n\n请确保已安装打印机驱动程序。',
         'error_print_cancelled': '打印已取消',
         'error_print_failed': '打印失败:\n{error}',
+        'error_label_size': '标签尺寸计算异常，请调整行列数、边距或间距。',
         'preparing_print': '⏳ 正在准备打印...',
         'print_ready': '✅ 打印准备完成！\n\n请在打印对话框中选择打印机并确认打印。',
         'success_title': '成功',
@@ -106,6 +106,7 @@ LANGUAGES = {
         'error_no_printer': 'ไม่พบเครื่องพิมพ์ที่ใช้งานได้！\n\nกรุณาตรวจสอบว่าได้ติดตั้งไดรเวอร์เครื่องพิมพ์แล้ว',
         'error_print_cancelled': 'ยกเลิกการพิมพ์',
         'error_print_failed': 'การพิมพ์ล้มเหลว:\n{error}',
+        'error_label_size': 'ขนาดฉลากคำนวณผิดพลาด โปรดปรับจำนวนแถว คอลัมน์ ระยะขอบ หรือระยะห่าง',
         'preparing_print': '⏳ กำลังเตรียมการพิมพ์...',
         'print_ready': '✅ เตรียมการพิมพ์เรียบร้อยแล้ว！\n\nกรุณาเลือกเครื่องพิมพ์และยืนยันการพิมพ์ในกล่องโต้ตอบ',
         'success_title': 'สำเร็จ',
@@ -1043,68 +1044,6 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('error_print_failed').format(error=str(e))
             )
     
-    def print_pdf(self, pdf_path):
-        """打印PDF文件"""
-        try:
-            # 创建打印机对象
-            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
-            
-            # 检查是否有可用的打印机
-            if not printer.isValid():
-                QMessageBox.warning(
-                    self,
-                    self.get_text('warning_title'),
-                    self.get_text('error_no_printer')
-                )
-                return
-            
-            # 显示打印对话框
-            print_dialog = QPrintDialog(printer, self)
-            
-            if print_dialog.exec() == QPrintDialog.DialogCode.Accepted:
-                # 用户确认打印
-                # 使用系统默认PDF查看器打印
-                # Windows系统使用不同的方法
-                if sys.platform == 'win32':
-                    # Windows: 使用默认程序打印PDF
-                    import subprocess
-                    # 使用 /p 参数直接打印
-                    subprocess.run(['start', '/min', '', pdf_path], shell=True, check=False)
-                    
-                    # 显示成功消息
-                    QMessageBox.information(
-                        self,
-                        self.get_text('success_title'),
-                        self.get_text('print_success').format(
-                            filename=pdf_path,
-                            count=self.rows_spin.value() * self.cols_spin.value()
-                        )
-                    )
-                else:
-                    # 其他系统的打印方法
-                    QMessageBox.information(
-                        self,
-                        self.get_text('success_title'),
-                        self.get_text('print_success').format(
-                            filename=pdf_path,
-                            count=self.rows_spin.value() * self.cols_spin.value()
-                        )
-                    )
-            else:
-                # 用户取消打印
-                QMessageBox.information(
-                    self,
-                    self.get_text('warning_title'),
-                    self.get_text('error_print_cancelled')
-                )
-                
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                self.get_text('error_title'),
-                self.get_text('error_print_failed').format(error=str(e))
-            )
-            
     def tile_label_image_to_pdf(self, image_path, output_pdf, rows=3, cols=4,
                                 margin_mm=8, spacing_mm=3, orientation='landscape'):
         """
@@ -1133,6 +1072,9 @@ class LabelPrinterQt(QMainWindow):
         # 计算单个标签区域大小
         label_width = (usable_width - (cols - 1) * spacing) / cols
         label_height = (usable_height - (rows - 1) * spacing) / rows
+
+        if label_width <= 0 or label_height <= 0:
+            raise ValueError(self.get_text('error_label_size'))
         
         # 读取图片验证
         try:
