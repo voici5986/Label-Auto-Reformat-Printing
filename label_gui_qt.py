@@ -8,6 +8,7 @@
 import sys
 import os
 import json
+import io
 from datetime import datetime
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -15,8 +16,9 @@ from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QGroupBox, QLineEdit, QGraphicsDropShadowEffect,
     QSplashScreen
 )
-from PyQt6.QtCore import Qt, QSize, QTimer, QUrl
+from PyQt6.QtCore import Qt, QTimer, QStandardPaths
 from PyQt6.QtGui import QPixmap, QFont, QColor, QIcon, QPainter
+from PyQt6.QtPrintSupport import QPrinterInfo
 from PIL import Image
 import fitz  # PyMuPDF - 用于PDF转图片和PDF转PNG
 
@@ -68,6 +70,7 @@ LANGUAGES = {
         'success_title': '成功',
         'success_message': 'PDF已生成！\n\n文件名: {filename}\n标签数: {count} 个\n\n是否打开文件所在位置？',
         'print_success': 'PDF已生成并发送到打印机！\n\n文件名: {filename}\n标签数: {count} 个',
+        'print_not_supported': '当前系统暂不支持直接打印，请先导出 PDF 后手动打印。'
     },
     'th': {
         'window_title': 'เครื่องมือพิมพ์ฉลาก',
@@ -112,6 +115,7 @@ LANGUAGES = {
         'success_title': 'สำเร็จ',
         'success_message': 'สร้าง PDF เรียบร้อยแล้ว！\n\nชื่อไฟล์: {filename}\nจำนวนฉลาก: {count} ฉลาก\n\nต้องการเปิดตำแหน่งไฟล์หรือไม่？',
         'print_success': 'สร้าง PDF และส่งไปยังเครื่องพิมพ์เรียบร้อยแล้ว！\n\nชื่อไฟล์: {filename}\nจำนวนฉลาก: {count} ฉลาก',
+        'print_not_supported': 'ระบบปัจจุบันไม่รองรับการพิมพ์โดยตรง โปรดส่งออก PDF แล้วพิมพ์ด้วยตนเอง'
     }
 }
 
@@ -122,6 +126,9 @@ class LabelPrinterQt(QMainWindow):
         self.image_path = ""
         self.preview_pixmap = None
         self.preview_generated = False  # 预览生成状态标志
+        self.is_windows = sys.platform.startswith('win')
+        self.status_label = None
+        self._status_message_key = None
         
         # 加载所有设置
         settings = self.load_settings()
@@ -133,6 +140,7 @@ class LabelPrinterQt(QMainWindow):
         self.saved_orientation = settings['orientation']
         
         self.init_ui()
+        self.update_button_states()
         
     def get_resource_path(self, relative_path):
         """获取资源文件的绝对路径(支持PyInstaller打包)"""
@@ -145,10 +153,21 @@ class LabelPrinterQt(QMainWindow):
         return os.path.join(base_path, relative_path)
     
     def ensure_outputs_folder(self):
-        """确保outputs文件夹存在,如果不存在则创建"""
-        outputs_dir = "outputs"
-        if not os.path.exists(outputs_dir):
-            os.makedirs(outputs_dir)
+        """确保输出目录存在,如果不可写则回退到当前目录"""
+        documents_path = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
+        preferred_dir = None
+        if documents_path:
+            preferred_dir = os.path.join(documents_path, "LabelPrinterOutputs")
+        outputs_dir = preferred_dir or os.path.join(os.path.abspath("."), "outputs")
+        try:
+            os.makedirs(outputs_dir, exist_ok=True)
+        except OSError:
+            fallback_dir = os.path.join(os.path.abspath("."), "outputs")
+            if outputs_dir != fallback_dir:
+                outputs_dir = fallback_dir
+                os.makedirs(outputs_dir, exist_ok=True)
+            else:
+                raise
         return outputs_dir
     
     def load_settings(self):
@@ -451,6 +470,11 @@ class LabelPrinterQt(QMainWindow):
                 border: 2px dashed #bdc3c7;
                 border-radius: 5px;
             }
+            #statusLabel {
+                color: #7f8c8d;
+                font-size: 14px;
+                padding: 4px;
+            }
         """)
         
     def create_left_panel(self):
@@ -684,6 +708,12 @@ class LabelPrinterQt(QMainWindow):
         """)
         
         layout.addWidget(self.preview_label)
+        self.status_label = QLabel()
+        self.status_label.setObjectName("statusLabel")
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
+        self.set_status_message(None)
         layout.addStretch()  # 添加弹性空间,让预览区域居中
         
         self.preview_group.setLayout(layout)
@@ -731,6 +761,10 @@ class LabelPrinterQt(QMainWindow):
         self.preview_btn.setText(self.get_text('preview_btn'))
         self.generate_btn.setText(self.get_text('generate_btn'))
         self.print_btn.setText(self.get_text('print_btn'))
+        if not self.is_windows:
+            self.print_btn.setToolTip(self.get_text('print_not_supported'))
+        else:
+            self.print_btn.setToolTip("")
         
         # 更新占位符
         self.path_edit.setPlaceholderText(self.get_text('placeholder'))
@@ -754,6 +788,9 @@ class LabelPrinterQt(QMainWindow):
         elif not self.preview_generated:
             self.preview_label.setText(self.get_text('preview_hint_click'))
         
+        self.set_status_message(self._status_message_key)
+        self.update_button_states()
+        
     def browse_image(self):
         """浏览并选择图片文件"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -773,6 +810,7 @@ class LabelPrinterQt(QMainWindow):
             # 显示提示文本
             self.preview_label.clear()
             self.preview_label.setText(self.get_text('preview_hint_click'))
+            self.set_status_message(None)
             
     def on_parameter_changed(self):
         """参数改变时的处理"""
@@ -782,6 +820,7 @@ class LabelPrinterQt(QMainWindow):
             self.update_button_states()
             # 显示参数改变提示
             self.preview_label.setText(self.get_text('preview_hint_params_changed'))
+            self.set_status_message('preview_hint_params_changed')
     
     def update_button_states(self):
         """更新按钮状态"""
@@ -792,7 +831,23 @@ class LabelPrinterQt(QMainWindow):
         
         # 生成和打印按钮:有图片且已生成预览时启用
         self.generate_btn.setEnabled(has_image and self.preview_generated)
-        self.print_btn.setEnabled(has_image and self.preview_generated)
+        allow_print = self.is_windows and has_image and self.preview_generated
+        self.print_btn.setEnabled(allow_print)
+        if not self.is_windows:
+            self.print_btn.setToolTip(self.get_text('print_not_supported'))
+        elif not allow_print:
+            self.print_btn.setToolTip("")
+    
+    def set_status_message(self, key=None):
+        """根据字典键更新状态标签, None 表示清除"""
+        if self.status_label is None:
+            return
+        if key is None:
+            self._status_message_key = None
+            self.status_label.setText("")
+        else:
+            self._status_message_key = key
+            self.status_label.setText(self.get_text(key))
     
     def validate_layout_parameters(self):
         """验证当前排版参数是否会生成有效的标签尺寸"""
@@ -840,34 +895,34 @@ class LabelPrinterQt(QMainWindow):
         if not self.validate_layout_parameters():
             return
         
+        pdf_document = None
         try:
             # 显示生成中提示
+            self.preview_label.clear()
             self.preview_label.setText(self.get_text('preview_generating'))
+            self.set_status_message('preview_generating')
             QApplication.processEvents()  # 强制更新UI
-            
-            # 生成临时PDF文件
-            temp_pdf = "temp_preview.pdf"
             
             # 获取页面方向
             orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
             
             # 调用PDF生成函数(使用真实参数生成精确预览)
-            self.tile_label_image_to_pdf(
+            pdf_bytes = self.tile_label_image_to_pdf(
                 image_path=self.image_path,
-                output_pdf=temp_pdf,
+                output_pdf=None,
                 rows=self.rows_spin.value(),
                 cols=self.cols_spin.value(),
                 margin_mm=self.margin_spin.value(),
                 spacing_mm=self.spacing_spin.value(),
-                orientation=orientation
+                orientation=orientation,
+                return_pdf_bytes=True
             )
             
             # 使用PyMuPDF将PDF转换为图片
-            pdf_document = fitz.open(temp_pdf)
+            pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
             page = pdf_document[0]  # 获取第一页
             
             # 设置缩放比例以获得高质量预览
-            # 预览区域是400x505,我们使用2倍分辨率渲染以保证清晰度
             zoom = 3
             mat = fitz.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat)
@@ -886,11 +941,7 @@ class LabelPrinterQt(QMainWindow):
             
             # 显示预览
             self.preview_label.setPixmap(scaled_pixmap)
-            
-            # 清理资源
-            pdf_document.close()
-            if os.path.exists(temp_pdf):
-                os.remove(temp_pdf)
+            self.set_status_message(None)
             
             # 标记预览已生成
             self.preview_generated = True
@@ -904,6 +955,10 @@ class LabelPrinterQt(QMainWindow):
             )
             # 恢复提示文本
             self.preview_label.setText(self.get_text('preview_hint_click'))
+            self.set_status_message(None)
+        finally:
+            if pdf_document is not None:
+                pdf_document.close()
             
     def update_label_count(self):
         """更新标签数量显示"""
@@ -947,7 +1002,7 @@ class LabelPrinterQt(QMainWindow):
             outputs_dir = self.ensure_outputs_folder()
             
             # 生成带时间戳的文件名
-            timestamp = datetime.now().strftime("%m%d%H%M")
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             output_pdf = os.path.join(outputs_dir, f"label{timestamp}.pdf")
             
             # 获取页面方向
@@ -1001,7 +1056,7 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('warning_no_image')
             )
             return
-        
+
         # 验证是否已生成预览
         if not self.preview_generated:
             QMessageBox.warning(
@@ -1010,7 +1065,7 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('warning_no_preview')
             )
             return
-        
+
         # 验证图片文件是否存在
         if not os.path.exists(self.image_path):
             QMessageBox.critical(
@@ -1019,23 +1074,44 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('error_not_exist')
             )
             return
-        
+
         if not self.validate_layout_parameters():
             return
-            
+
+        if not self.is_windows:
+            QMessageBox.information(
+                self,
+                self.get_text('warning_title'),
+                self.get_text('print_not_supported')
+            )
+            self.set_status_message('print_not_supported')
+            return
+
+        if not QPrinterInfo.availablePrinters():
+            QMessageBox.critical(
+                self,
+                self.get_text('error_title'),
+                self.get_text('error_no_printer')
+            )
+            self.set_status_message('error_no_printer')
+            return
+
+        pdf_document = None
         try:
             # 确保outputs文件夹存在
             outputs_dir = self.ensure_outputs_folder()
-            
-            # 生成带时间戳的文件名
-            timestamp = datetime.now().strftime("%m%d%H%M")
+
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             output_pdf = os.path.join(outputs_dir, f"label{timestamp}.pdf")
             output_png = os.path.join(outputs_dir, f"label{timestamp}.png")
             
             # 获取页面方向
             orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
             
-            # 1. 生成PDF文件(保留原有功能)
+            self.set_status_message('preparing_print')
+            QApplication.processEvents()
+            
+            # 1. 生成PDF文件
             self.tile_label_image_to_pdf(
                 image_path=self.image_path,
                 output_pdf=output_pdf,
@@ -1051,57 +1127,55 @@ class LabelPrinterQt(QMainWindow):
             page = pdf_document[0]  # 获取第一页
             
             # 设置300 DPI的缩放比例
-            # 72 DPI是默认值,300 DPI需要 300/72 ≈ 4.17 的缩放
             zoom = 300 / 72
             mat = fitz.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat)
             
             # 3. 保存PNG文件
             pix.save(output_png)
-            pdf_document.close()
+            
+            self.set_status_message('print_ready')
+            QApplication.processEvents()
             
             # 4. 使用os.startfile调用Windows打印对话框
-            if sys.platform == 'win32':
-                os.startfile(output_png, "print")
-                
-                # 显示成功消息
-                QMessageBox.information(
-                    self,
-                    self.get_text('success_title'),
-                    self.get_text('print_success').format(
-                        filename=output_pdf,
-                        count=self.rows_spin.value() * self.cols_spin.value()
-                    )
+            os.startfile(output_png, "print")
+            
+            # 显示成功消息
+            QMessageBox.information(
+                self,
+                self.get_text('success_title'),
+                self.get_text('print_success').format(
+                    filename=output_pdf,
+                    count=self.rows_spin.value() * self.cols_spin.value()
                 )
-            else:
-                # 非Windows系统的处理
-                QMessageBox.information(
-                    self,
-                    self.get_text('success_title'),
-                    self.get_text('print_success').format(
-                        filename=output_pdf,
-                        count=self.rows_spin.value() * self.cols_spin.value()
-                    )
-                )
+            )
                     
         except Exception as e:
+            self.set_status_message(None)
             QMessageBox.critical(
                 self,
                 self.get_text('error_title'),
                 self.get_text('error_print_failed').format(error=str(e))
             )
+        finally:
+            if pdf_document is not None:
+                pdf_document.close()
     
 
-    def tile_label_image_to_pdf(self, image_path, output_pdf, rows=3, cols=4,
-                                margin_mm=8, spacing_mm=3, orientation='landscape'):
+    def tile_label_image_to_pdf(self, image_path, output_pdf=None, rows=3, cols=4,
+                                margin_mm=8, spacing_mm=3, orientation='landscape',
+                                return_pdf_bytes=False):
         """
-        将标签图片重复排列到一页A4纸上
-        （保留原有的核心逻辑）
+        将标签图片重复排列到一页A4纸上，并可选地返回 PDF 字节内容。
         """
+        if output_pdf is None and not return_pdf_bytes:
+            raise ValueError("output_pdf must be provided when return_pdf_bytes is False")
+        
         # 延迟导入 reportlab（优化启动速度）
         from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import A4, landscape
         from reportlab.lib.units import mm
+        from reportlab.lib.utils import ImageReader
         
         # A4尺寸（横向或竖向）
         if orientation == 'landscape':
@@ -1124,30 +1198,45 @@ class LabelPrinterQt(QMainWindow):
         # 读取图片验证
         try:
             img = Image.open(image_path)
-            img_width, img_height = img.size
+            image_reader = ImageReader(img)
         except Exception as e:
             raise Exception(f"无法读取图片: {e}")
         
-        # 创建PDF
-        c = canvas.Canvas(output_pdf, pagesize=page_size)
+        buffer = io.BytesIO() if return_pdf_bytes else None
+        target = buffer if buffer is not None else output_pdf
+        try:
+            # 创建PDF
+            c = canvas.Canvas(target, pagesize=page_size)
+            
+            # 绘制标签网格
+            for row in range(rows):
+                for col in range(cols):
+                    # 计算每个标签的位置
+                    x = margin + col * (label_width + spacing)
+                    y = page_height - margin - (row + 1) * label_height - row * spacing
+                    
+                    # 绘制图片
+                    c.drawImage(
+                        image_reader,
+                        x, y,
+                        width=label_width,
+                        height=label_height,
+                        preserveAspectRatio=True
+                    )
+            
+            c.save()
+        finally:
+            img.close()
         
-        # 绘制标签网格
-        for row in range(rows):
-            for col in range(cols):
-                # 计算每个标签的位置
-                x = margin + col * (label_width + spacing)
-                y = page_height - margin - (row + 1) * label_height - row * spacing
-                
-                # 绘制图片
-                c.drawImage(
-                    image_path,
-                    x, y,
-                    width=label_width,
-                    height=label_height,
-                    preserveAspectRatio=True
-                )
+        if buffer is not None:
+            pdf_bytes = buffer.getvalue()
+            buffer.close()
+            if output_pdf:
+                with open(output_pdf, 'wb') as f:
+                    f.write(pdf_bytes)
+            return pdf_bytes
         
-        c.save()
+        return None
         
     def center_window(self):
         """将窗口居中显示"""
