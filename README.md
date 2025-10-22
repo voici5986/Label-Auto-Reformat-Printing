@@ -126,6 +126,10 @@ label-printer/
 
 ## 📝 开发说明 | Development
 
+### 🌐 局域网 Web 服务改造 | Web Service Migration
+
+如果希望将本工具改造成在 Windows Server 上运行的局域网 Web 服务，并通过浏览器供多台电脑使用，请参考 [docs/web_service_migration.md](docs/web_service_migration.md)，其中包含架构方案、改造步骤和工作量评估。
+
 ### 打包为EXE
 
 使用 PyInstaller 打包程序：
