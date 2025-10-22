@@ -17,7 +17,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, QUrl
 from PyQt6.QtGui import QPixmap, QFont, QColor, QIcon, QPainter
-from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 from PIL import Image
 import fitz  # PyMuPDF - 用于PDF转图片和PDF转PNG
 
@@ -60,6 +59,7 @@ LANGUAGES = {
         'error_load_preview': '无法加载图片预览:\n{error}',
         'error_generate': '生成PDF时出错:\n{error}',
         'error_preview': '生成预览时出错:\n{error}',
+        'error_invalid_params': '当前排版参数导致标签尺寸为负，请调整行数、列数、边距或间距设置！',
         'error_no_printer': '未检测到可用的打印机！\n\n请确保已安装打印机驱动程序。',
         'error_print_cancelled': '打印已取消',
         'error_print_failed': '打印失败:\n{error}',
@@ -103,6 +103,7 @@ LANGUAGES = {
         'error_load_preview': 'ไม่สามารถโหลดตัวอย่างรูปภาพ:\n{error}',
         'error_generate': 'เกิดข้อผิดพลาดในการสร้าง PDF:\n{error}',
         'error_preview': 'เกิดข้อผิดพลาดในการสร้างตัวอย่าง:\n{error}',
+        'error_invalid_params': 'การตั้งค่าปัจจุบันทำให้ขนาดฉลากติดลบ โปรดปรับแถว คอลัมน์ ระยะขอบ หรือระยะห่าง',
         'error_no_printer': 'ไม่พบเครื่องพิมพ์ที่ใช้งานได้！\n\nกรุณาตรวจสอบว่าได้ติดตั้งไดรเวอร์เครื่องพิมพ์แล้ว',
         'error_print_cancelled': 'ยกเลิกการพิมพ์',
         'error_print_failed': 'การพิมพ์ล้มเหลว:\n{error}',
@@ -793,9 +794,50 @@ class LabelPrinterQt(QMainWindow):
         self.generate_btn.setEnabled(has_image and self.preview_generated)
         self.print_btn.setEnabled(has_image and self.preview_generated)
     
+    def validate_layout_parameters(self):
+        """验证当前排版参数是否会生成有效的标签尺寸"""
+        rows = self.rows_spin.value()
+        cols = self.cols_spin.value()
+        
+        if rows <= 0 or cols <= 0:
+            QMessageBox.warning(
+                self,
+                self.get_text('warning_title'),
+                self.get_text('error_invalid_params')
+            )
+            return False
+        
+        orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
+        if orientation == 'landscape':
+            page_width_mm, page_height_mm = 297.0, 210.0
+        else:
+            page_width_mm, page_height_mm = 210.0, 297.0
+        
+        margin = float(self.margin_spin.value())
+        spacing = float(self.spacing_spin.value())
+        
+        usable_width = page_width_mm - 2 * margin
+        usable_height = page_height_mm - 2 * margin
+        
+        label_width = (usable_width - (cols - 1) * spacing) / cols
+        label_height = (usable_height - (rows - 1) * spacing) / rows
+        
+        if label_width <= 0 or label_height <= 0:
+            QMessageBox.warning(
+                self,
+                self.get_text('warning_title'),
+                self.get_text('error_invalid_params')
+            )
+            return False
+        
+        return True
+    
     def generate_preview(self):
         """生成PDF预览"""
         if not self.image_path:
+            return
+        
+        if not self.validate_layout_parameters():
             return
         
         try:
@@ -887,7 +929,7 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('warning_no_preview')
             )
             return
-            
+        
         # 验证图片文件是否存在
         if not os.path.exists(self.image_path):
             QMessageBox.critical(
@@ -895,6 +937,9 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('error_title'),
                 self.get_text('error_not_exist')
             )
+            return
+        
+        if not self.validate_layout_parameters():
             return
             
         try:
@@ -965,7 +1010,7 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('warning_no_preview')
             )
             return
-            
+        
         # 验证图片文件是否存在
         if not os.path.exists(self.image_path):
             QMessageBox.critical(
@@ -973,6 +1018,9 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('error_title'),
                 self.get_text('error_not_exist')
             )
+            return
+        
+        if not self.validate_layout_parameters():
             return
             
         try:
@@ -1043,68 +1091,7 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('error_print_failed').format(error=str(e))
             )
     
-    def print_pdf(self, pdf_path):
-        """打印PDF文件"""
-        try:
-            # 创建打印机对象
-            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
-            
-            # 检查是否有可用的打印机
-            if not printer.isValid():
-                QMessageBox.warning(
-                    self,
-                    self.get_text('warning_title'),
-                    self.get_text('error_no_printer')
-                )
-                return
-            
-            # 显示打印对话框
-            print_dialog = QPrintDialog(printer, self)
-            
-            if print_dialog.exec() == QPrintDialog.DialogCode.Accepted:
-                # 用户确认打印
-                # 使用系统默认PDF查看器打印
-                # Windows系统使用不同的方法
-                if sys.platform == 'win32':
-                    # Windows: 使用默认程序打印PDF
-                    import subprocess
-                    # 使用 /p 参数直接打印
-                    subprocess.run(['start', '/min', '', pdf_path], shell=True, check=False)
-                    
-                    # 显示成功消息
-                    QMessageBox.information(
-                        self,
-                        self.get_text('success_title'),
-                        self.get_text('print_success').format(
-                            filename=pdf_path,
-                            count=self.rows_spin.value() * self.cols_spin.value()
-                        )
-                    )
-                else:
-                    # 其他系统的打印方法
-                    QMessageBox.information(
-                        self,
-                        self.get_text('success_title'),
-                        self.get_text('print_success').format(
-                            filename=pdf_path,
-                            count=self.rows_spin.value() * self.cols_spin.value()
-                        )
-                    )
-            else:
-                # 用户取消打印
-                QMessageBox.information(
-                    self,
-                    self.get_text('warning_title'),
-                    self.get_text('error_print_cancelled')
-                )
-                
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                self.get_text('error_title'),
-                self.get_text('error_print_failed').format(error=str(e))
-            )
-            
+
     def tile_label_image_to_pdf(self, image_path, output_pdf, rows=3, cols=4,
                                 margin_mm=8, spacing_mm=3, orientation='landscape'):
         """
