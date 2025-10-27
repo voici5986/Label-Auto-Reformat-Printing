@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QSpinBox, QRadioButton, QButtonGroup,
     QFileDialog, QMessageBox, QGroupBox, QLineEdit, QGraphicsDropShadowEffect,
-    QSplashScreen
+    QSplashScreen, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, QUrl
 from PyQt6.QtGui import QPixmap, QFont, QColor, QIcon, QPainter
@@ -116,6 +116,34 @@ LANGUAGES = {
 }
 
 
+class AspectRatioLabel(QLabel):
+    """支持固定宽高比的QLabel"""
+
+    def __init__(self, aspect_ratio=1.0, parent=None):
+        super().__init__(parent)
+        self._aspect_ratio = aspect_ratio  # width / height
+
+    def set_aspect_ratio(self, ratio):
+        self._aspect_ratio = ratio
+        self.updateGeometry()
+
+    def hasHeightForWidth(self):
+        return True
+
+    def heightForWidth(self, width):
+        if self._aspect_ratio == 0:
+            return super().heightForWidth(width)
+        return int(width / self._aspect_ratio)
+
+    def sizeHint(self):
+        hint = super().sizeHint()
+        return QSize(hint.width(), self.heightForWidth(hint.width()))
+
+    def minimumSizeHint(self):
+        hint = super().minimumSizeHint()
+        return QSize(hint.width(), self.heightForWidth(hint.width()))
+
+
 class LabelPrinterQt(QMainWindow):
     # 窗口尺寸常量
     WINDOW_WIDTH = 900
@@ -124,11 +152,15 @@ class LabelPrinterQt(QMainWindow):
     # 预览区域尺寸常量
     PREVIEW_WIDTH = 400
     PREVIEW_HEIGHT = 505
+    PREVIEW_ASPECT_RATIO = 1 / 1.2  # 宽:高
     
     # 按钮尺寸常量
     BUTTON_HEIGHT = 40
     TITLE_BUTTON_HEIGHT = 45
     
+    # 布局限制
+    LEFT_PANEL_MAX_WIDTH = 420
+
     # 字体大小常量
     FONT_SIZE_NORMAL = 16
     FONT_SIZE_TITLE = 20
@@ -278,6 +310,7 @@ class LabelPrinterQt(QMainWindow):
         
         # 左侧控制面板
         left_panel = self.create_left_panel()
+        left_panel.setMaximumWidth(self.LEFT_PANEL_MAX_WIDTH)
         main_layout.addWidget(left_panel, stretch=2)
         
         # 右侧预览面板
@@ -721,10 +754,10 @@ class LabelPrinterQt(QMainWindow):
         layout.setSpacing(10)
         
         # 预览标签
-        self.preview_label = QLabel()
+        self.preview_label = AspectRatioLabel(self.PREVIEW_ASPECT_RATIO)
         self.preview_label.setObjectName("previewLabel")
-        # 增加最小大小以改善预览效果
-        self.preview_label.setMinimumSize(400, 480)
+        self.preview_label.setMinimumWidth(400)
+        self.preview_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setText(self.get_text('preview_hint_no_image'))
         self.preview_label.setStyleSheet("""
@@ -907,23 +940,28 @@ class LabelPrinterQt(QMainWindow):
             )
             # 恢复提示文本
             self.preview_label.setText(self.get_text('preview_hint_click'))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.preview_generated and self.preview_pixmap and not self.preview_pixmap.isNull():
+            self.show_preview_image()
             
-    def show_preview_image(self, pixmap):
-        """显示预览图像，根据标签大小自适应"""
+    def show_preview_image(self, pixmap=None):
+        """显示预览图像，根据当前尺寸自适应"""
         if pixmap and not pixmap.isNull():
-            # 获取预览标签的当前大小
-            label_size = self.preview_label.size()
-            
-            # 按比例缩放图像以适应标签大小
-            scaled_pixmap = pixmap.scaled(
-                label_size.width() - 20,  # 留一些边距
-                label_size.height() - 20,
+            self.preview_pixmap = pixmap
+        if self.preview_pixmap and not self.preview_pixmap.isNull():
+            target_rect = self.preview_label.contentsRect()
+            target_width = max(1, target_rect.width() - 20)
+            target_height = max(1, target_rect.height() - 20)
+            scaled_pixmap = self.preview_pixmap.scaled(
+                target_width,
+                target_height,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
-            
-            # 显示缩放后的图像
             self.preview_label.setPixmap(scaled_pixmap)
+            self.preview_label.setText("")
     
     def update_label_count(self):
         """更新标签数量显示"""
@@ -1141,7 +1179,7 @@ class LabelPrinterQt(QMainWindow):
 def create_splash_screen():
     """创建启动画面"""
     # 创建一个简单的启动画面
-    splash_pix = QPixmap(400, 247)
+    splash_pix = QPixmap(400, 300)
     splash_pix.fill(QColor("#3498db"))
     
     # 在启动画面上绘制文字
