@@ -252,7 +252,8 @@ class LabelPrinterQt(QMainWindow):
     def init_ui(self):
         """初始化用户界面"""
         self.setWindowTitle(self.get_text('window_title'))
-        self.setFixedSize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+        self.setMinimumSize(1000, 538)  # 设置最小窗口大小
+        self.resize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)  # 设置初始大小
         
         # 设置窗口图标
         icon_path = self.get_resource_path('label.ico')
@@ -277,11 +278,11 @@ class LabelPrinterQt(QMainWindow):
         
         # 左侧控制面板
         left_panel = self.create_left_panel()
-        main_layout.addWidget(left_panel, stretch=3)
+        main_layout.addWidget(left_panel, stretch=2)
         
         # 右侧预览面板
         right_panel = self.create_right_panel()
-        main_layout.addWidget(right_panel, stretch=2)
+        main_layout.addWidget(right_panel, stretch=3)
         
         # 居中显示窗口
         self.center_window()
@@ -722,7 +723,8 @@ class LabelPrinterQt(QMainWindow):
         # 预览标签
         self.preview_label = QLabel()
         self.preview_label.setObjectName("previewLabel")
-        self.preview_label.setFixedSize(self.PREVIEW_WIDTH, self.PREVIEW_HEIGHT)
+        # 增加最小大小以改善预览效果
+        self.preview_label.setMinimumSize(400, 480)
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setText(self.get_text('preview_hint_no_image'))
         self.preview_label.setStyleSheet("""
@@ -885,15 +887,8 @@ class LabelPrinterQt(QMainWindow):
             pixmap = QPixmap()
             pixmap.loadFromData(img_data)
             
-            # 缩放到预览区域大小
-            scaled_pixmap = pixmap.scaled(
-                400, 505,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
-            
             # 显示预览
-            self.preview_label.setPixmap(scaled_pixmap)
+            self.show_preview_image(pixmap)
             
             # 清理资源
             pdf_document.close()
@@ -913,6 +908,23 @@ class LabelPrinterQt(QMainWindow):
             # 恢复提示文本
             self.preview_label.setText(self.get_text('preview_hint_click'))
             
+    def show_preview_image(self, pixmap):
+        """显示预览图像，根据标签大小自适应"""
+        if pixmap and not pixmap.isNull():
+            # 获取预览标签的当前大小
+            label_size = self.preview_label.size()
+            
+            # 按比例缩放图像以适应标签大小
+            scaled_pixmap = pixmap.scaled(
+                label_size.width() - 20,  # 留一些边距
+                label_size.height() - 20,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+            
+            # 显示缩放后的图像
+            self.preview_label.setPixmap(scaled_pixmap)
+    
     def update_label_count(self):
         """更新标签数量显示"""
         count = self.rows_spin.value() * self.cols_spin.value()
@@ -1129,7 +1141,7 @@ class LabelPrinterQt(QMainWindow):
 def create_splash_screen():
     """创建启动画面"""
     # 创建一个简单的启动画面
-    splash_pix = QPixmap(400, 300)
+    splash_pix = QPixmap(400, 247)
     splash_pix.fill(QColor("#3498db"))
     
     # 在启动画面上绘制文字
