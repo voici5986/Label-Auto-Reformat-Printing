@@ -19,6 +19,9 @@ dist/
 *.pdf
 *.png
 
+# 输出文件夹
+outputs/
+
 # 配置文件（如果包含敏感信息）
 # settings.json
 

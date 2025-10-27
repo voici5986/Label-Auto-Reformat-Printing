@@ -117,11 +117,30 @@ LANGUAGES = {
 
 
 class LabelPrinterQt(QMainWindow):
+    # 窗口尺寸常量
+    WINDOW_WIDTH = 900
+    WINDOW_HEIGHT = 600
+    
+    # 预览区域尺寸常量
+    PREVIEW_WIDTH = 400
+    PREVIEW_HEIGHT = 505
+    
+    # 按钮尺寸常量
+    BUTTON_HEIGHT = 40
+    TITLE_BUTTON_HEIGHT = 45
+    
+    # 字体大小常量
+    FONT_SIZE_NORMAL = 16
+    FONT_SIZE_TITLE = 20
+    
     def __init__(self):
         super().__init__()
         self.image_path = ""
         self.preview_pixmap = None
         self.preview_generated = False  # 预览生成状态标志
+        self.settings_timer = QTimer()  # 添加定时器用于防抖
+        self.settings_timer.setSingleShot(True)
+        self.settings_timer.timeout.connect(self.save_settings)
         
         # 加载所有设置
         settings = self.load_settings()
@@ -196,6 +215,36 @@ class LabelPrinterQt(QMainWindow):
         except:
             pass
     
+    def save_settings_debounce(self):
+        """防抖保存设置"""
+        self.settings_timer.start(500)  # 500ms防抖延迟
+    
+    def validate_image_file(self):
+        """验证图片文件是否存在"""
+        if not self.image_path:
+            QMessageBox.warning(
+                self,
+                self.get_text('warning_title'),
+                self.get_text('warning_no_image')
+            )
+            return False
+        
+        if not os.path.exists(self.image_path):
+            QMessageBox.critical(
+                self,
+                self.get_text('error_title'),
+                self.get_text('error_not_exist')
+            )
+            return False
+        
+        return True
+    
+    def generate_filename(self, extension):
+        """生成带时间戳的文件名"""
+        outputs_dir = self.ensure_outputs_folder()
+        timestamp = datetime.now().strftime("%m%d%H%M")
+        return os.path.join(outputs_dir, f"label{timestamp}.{extension}")
+    
     def get_text(self, key):
         """获取当前语言的文本"""
         return LANGUAGES[self.current_lang].get(key, key)
@@ -203,7 +252,7 @@ class LabelPrinterQt(QMainWindow):
     def init_ui(self):
         """初始化用户界面"""
         self.setWindowTitle(self.get_text('window_title'))
-        self.setFixedSize(900, 600)
+        self.setFixedSize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
         
         # 设置窗口图标
         icon_path = self.get_resource_path('label.ico')
@@ -466,7 +515,7 @@ class LabelPrinterQt(QMainWindow):
         self.title_label = QLabel(self.get_text('main_title'))
         self.title_label.setObjectName("titleLabel")
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setFixedHeight(45)
+        self.title_label.setFixedHeight(self.TITLE_BUTTON_HEIGHT)
         self.add_shadow(self.title_label)
         title_layout.addWidget(self.title_label)
         
@@ -475,7 +524,7 @@ class LabelPrinterQt(QMainWindow):
         self.lang_btn.setObjectName("langBtn")
         self.lang_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.lang_btn.clicked.connect(self.switch_language)
-        self.lang_btn.setFixedSize(80, 45)
+        self.lang_btn.setFixedSize(80, self.TITLE_BUTTON_HEIGHT)
         self.add_shadow(self.lang_btn)
         title_layout.addWidget(self.lang_btn)
         
@@ -502,7 +551,7 @@ class LabelPrinterQt(QMainWindow):
         self.preview_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.preview_btn.clicked.connect(self.generate_preview)
         self.preview_btn.setEnabled(False)  # 初始禁用
-        self.preview_btn.setFixedHeight(40)
+        self.preview_btn.setFixedHeight(self.BUTTON_HEIGHT)
         self.add_shadow(self.preview_btn)
         layout.addWidget(self.preview_btn)
         
@@ -515,7 +564,7 @@ class LabelPrinterQt(QMainWindow):
         self.generate_btn.setObjectName("generateBtn")
         self.generate_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.generate_btn.clicked.connect(self.generate_pdf)
-        self.generate_btn.setFixedHeight(40)
+        self.generate_btn.setFixedHeight(self.BUTTON_HEIGHT)
         self.add_shadow(self.generate_btn)
         button_layout.addWidget(self.generate_btn)
         
@@ -524,7 +573,7 @@ class LabelPrinterQt(QMainWindow):
         self.print_btn.setObjectName("printBtn")
         self.print_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.print_btn.clicked.connect(self.generate_and_print_pdf)
-        self.print_btn.setFixedHeight(40)
+        self.print_btn.setFixedHeight(self.BUTTON_HEIGHT)
         self.add_shadow(self.print_btn)
         button_layout.addWidget(self.print_btn)
         
@@ -571,10 +620,10 @@ class LabelPrinterQt(QMainWindow):
         grid_layout.addWidget(self.rows_label)
         self.rows_spin = QSpinBox()
         self.rows_spin.setRange(1, 10)
-        self.rows_spin.setValue(self.saved_rows)  # 使用保存的值
+        self.rows_spin.setValue(self.saved_rows)  # 使用保存的값
         self.rows_spin.valueChanged.connect(self.update_label_count)
         self.rows_spin.valueChanged.connect(self.on_parameter_changed)
-        self.rows_spin.valueChanged.connect(self.save_settings)  # 自动保存
+        self.rows_spin.valueChanged.connect(self.save_settings_debounce)  # 使用防抖保存
         grid_layout.addWidget(self.rows_spin)
         
         grid_layout.addSpacing(20)
@@ -584,16 +633,16 @@ class LabelPrinterQt(QMainWindow):
         grid_layout.addWidget(self.cols_label)
         self.cols_spin = QSpinBox()
         self.cols_spin.setRange(1, 10)
-        self.cols_spin.setValue(self.saved_cols)  # 使用保存的值
+        self.cols_spin.setValue(self.saved_cols)  # 使用保存的값
         self.cols_spin.valueChanged.connect(self.update_label_count)
         self.cols_spin.valueChanged.connect(self.on_parameter_changed)
-        self.cols_spin.valueChanged.connect(self.save_settings)  # 自动保存
+        self.cols_spin.valueChanged.connect(self.save_settings_debounce)  # 使用防抖保存
         grid_layout.addWidget(self.cols_spin)
         
         grid_layout.addStretch()
         layout.addLayout(grid_layout)
         
-        # 边距和间距设置
+        # 边距และ间距设置
         spacing_layout = QHBoxLayout()
         
         # 边距
@@ -601,10 +650,10 @@ class LabelPrinterQt(QMainWindow):
         spacing_layout.addWidget(self.margin_label)
         self.margin_spin = QSpinBox()
         self.margin_spin.setRange(0, 30)
-        self.margin_spin.setValue(self.saved_margin)  # 使用保存的值
+        self.margin_spin.setValue(self.saved_margin)  # 使用保存的값
         self.margin_spin.setSuffix(" mm")
         self.margin_spin.valueChanged.connect(self.on_parameter_changed)
-        self.margin_spin.valueChanged.connect(self.save_settings)  # 自动保存
+        self.margin_spin.valueChanged.connect(self.save_settings_debounce)  # 使用防抖保存
         spacing_layout.addWidget(self.margin_spin)
         
         spacing_layout.addSpacing(20)
@@ -614,10 +663,10 @@ class LabelPrinterQt(QMainWindow):
         spacing_layout.addWidget(self.spacing_label)
         self.spacing_spin = QSpinBox()
         self.spacing_spin.setRange(0, 20)
-        self.spacing_spin.setValue(self.saved_spacing)  # 使用保存的值
+        self.spacing_spin.setValue(self.saved_spacing)  # 使用保存的값
         self.spacing_spin.setSuffix(" mm")
         self.spacing_spin.valueChanged.connect(self.on_parameter_changed)
-        self.spacing_spin.valueChanged.connect(self.save_settings)  # 自动保存
+        self.spacing_spin.valueChanged.connect(self.save_settings_debounce)  # 使用防抖保存
         spacing_layout.addWidget(self.spacing_spin)
         
         spacing_layout.addStretch()
@@ -638,16 +687,16 @@ class LabelPrinterQt(QMainWindow):
         self.orientation_group = QButtonGroup()
         
         self.landscape_radio = QRadioButton(self.get_text('landscape'))
-        self.landscape_radio.setChecked(self.saved_orientation == 'landscape')  # 使用保存的值
+        self.landscape_radio.setChecked(self.saved_orientation == 'landscape')  # 使用保存的값
         self.landscape_radio.toggled.connect(self.on_parameter_changed)
-        self.landscape_radio.toggled.connect(self.save_settings)  # 自动保存
+        self.landscape_radio.toggled.connect(self.save_settings_debounce)  # 使用防抖保存
         self.orientation_group.addButton(self.landscape_radio, 0)
         orientation_layout.addWidget(self.landscape_radio)
         
         self.portrait_radio = QRadioButton(self.get_text('portrait'))
-        self.portrait_radio.setChecked(self.saved_orientation == 'portrait')  # 使用保存的值
+        self.portrait_radio.setChecked(self.saved_orientation == 'portrait')  # 使用保存的값
         self.portrait_radio.toggled.connect(self.on_parameter_changed)
-        self.portrait_radio.toggled.connect(self.save_settings)  # 自动保存
+        self.portrait_radio.toggled.connect(self.save_settings_debounce)  # 使用防抖保存
         self.orientation_group.addButton(self.portrait_radio, 1)
         orientation_layout.addWidget(self.portrait_radio)
         
@@ -673,7 +722,7 @@ class LabelPrinterQt(QMainWindow):
         # 预览标签
         self.preview_label = QLabel()
         self.preview_label.setObjectName("previewLabel")
-        self.preview_label.setFixedSize(400, 505)
+        self.preview_label.setFixedSize(self.PREVIEW_WIDTH, self.PREVIEW_HEIGHT)
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setText(self.get_text('preview_hint_no_image'))
         self.preview_label.setStyleSheet("""
@@ -753,7 +802,7 @@ class LabelPrinterQt(QMainWindow):
             self.preview_label.setText(self.get_text('preview_hint_no_image'))
         elif not self.preview_generated:
             self.preview_label.setText(self.get_text('preview_hint_click'))
-        
+            
     def browse_image(self):
         """浏览并选择图片文件"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -872,14 +921,9 @@ class LabelPrinterQt(QMainWindow):
     def generate_pdf(self):
         """生成PDF文件"""
         # 验证是否选择了图片
-        if not self.image_path:
-            QMessageBox.warning(
-                self,
-                self.get_text('warning_title'),
-                self.get_text('warning_no_image')
-            )
+        if not self.validate_image_file():
             return
-        
+            
         # 验证是否已生成预览
         if not self.preview_generated:
             QMessageBox.warning(
@@ -889,22 +933,9 @@ class LabelPrinterQt(QMainWindow):
             )
             return
             
-        # 验证图片文件是否存在
-        if not os.path.exists(self.image_path):
-            QMessageBox.critical(
-                self,
-                self.get_text('error_title'),
-                self.get_text('error_not_exist')
-            )
-            return
-            
         try:
-            # 确保outputs文件夹存在
-            outputs_dir = self.ensure_outputs_folder()
-            
-            # 生成带时间戳的文件名
-            timestamp = datetime.now().strftime("%m%d%H%M")
-            output_pdf = os.path.join(outputs_dir, f"label{timestamp}.pdf")
+            # 生成带时间戳的PDF文件名
+            output_pdf = self.generate_filename("pdf")
             
             # 获取页面方向
             orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
@@ -933,6 +964,7 @@ class LabelPrinterQt(QMainWindow):
             
             if reply == QMessageBox.StandardButton.Yes:
                 # 打开outputs文件夹
+                outputs_dir = self.ensure_outputs_folder()
                 if sys.platform == 'win32':
                     os.startfile(os.path.abspath(outputs_dir))
                 elif sys.platform == 'darwin':
@@ -950,14 +982,9 @@ class LabelPrinterQt(QMainWindow):
     def generate_and_print_pdf(self):
         """生成PDF并转换为PNG打印"""
         # 验证是否选择了图片
-        if not self.image_path:
-            QMessageBox.warning(
-                self,
-                self.get_text('warning_title'),
-                self.get_text('warning_no_image')
-            )
+        if not self.validate_image_file():
             return
-        
+            
         # 验证是否已生成预览
         if not self.preview_generated:
             QMessageBox.warning(
@@ -967,23 +994,10 @@ class LabelPrinterQt(QMainWindow):
             )
             return
             
-        # 验证图片文件是否存在
-        if not os.path.exists(self.image_path):
-            QMessageBox.critical(
-                self,
-                self.get_text('error_title'),
-                self.get_text('error_not_exist')
-            )
-            return
-            
         try:
-            # 确保outputs文件夹存在
-            outputs_dir = self.ensure_outputs_folder()
-            
             # 生成带时间戳的文件名
-            timestamp = datetime.now().strftime("%m%d%H%M")
-            output_pdf = os.path.join(outputs_dir, f"label{timestamp}.pdf")
-            output_png = os.path.join(outputs_dir, f"label{timestamp}.png")
+            output_pdf = self.generate_filename("pdf")
+            output_png = self.generate_filename("png")
             
             # 获取页面方向
             orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
@@ -1132,12 +1146,12 @@ def create_splash_screen():
     # 绘制标题
     painter.drawText(splash_pix.rect(), Qt.AlignmentFlag.AlignCenter, "🏷️\n标签打印工具\nLabel Printer")
     
-    # 绘制版本信息
+    # เขียนเวอร์ชัน
     version_font = QFont()
     version_font.setFamilies(["Leelawadee UI", "Microsoft YaHei UI", "sans-serif"])
     version_font.setPointSize(12)
     painter.setFont(version_font)
-    painter.drawText(20, 260, "正在加载... Loading...")
+    painter.drawText(20, 260, "正在โหลด... Loading...")
     
     painter.end()
     
@@ -1153,7 +1167,7 @@ def main():
     # 字体回退列表：泰语优先，中文次之，最后回退到系统默认
     # Leelawadee UI - Windows自带泰语字体
     # Microsoft YaHei UI - Windows自带中文字体
-    # sans-serif - 系统默认无衬线字体
+    # sans-serif - 系统默认无衬線字体
     font.setFamilies(["Leelawadee UI", "Microsoft YaHei UI", "sans-serif"])
     font.setPointSize(11)
     app.setFont(font)
