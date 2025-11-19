@@ -54,6 +54,12 @@ A modern label batch printing tool that automatically arranges label images on A
 
 ### 安装依赖 | Installation
 
+**推荐方式**（使用 requirements.txt）：
+```bash
+pip install -r requirements.txt
+```
+
+**或手动安装**：
 ```bash
 pip install PyQt6 Pillow reportlab PyMuPDF
 ```
@@ -88,11 +94,13 @@ python label_gui_qt.py
 ```
 label-printer/
 ├── label_gui_qt.py          # 启动入口（负责启动画面与主窗体加载）
+├── __version__.py           # 版本信息管理
+├── requirements.txt         # 项目依赖清单
 ├── label_bundle.spec        # PyInstaller 打包配置（目录模式）
-├── config/                  # 配置模块（默认设置、设置服务）
+├── config/                  # 配置模块（默认设置、设置服务、参数验证）
 ├── i18n/                    # 多语言字典
-├── services/                # 业务服务（PDF/PIL 处理等）
-├── ui/                      # 界面组件（主窗口、面板、样式）
+├── services/                # 业务服务（PDF/PIL 处理、输入验证等）
+├── ui/                      # 界面组件（主窗口、面板、样式、UI 常量）
 ├── widgets/                 # 可复用自定义控件与特效
 ├── outputs/                 # 自动生成的输出目录（PDF/PNG）
 ├── label.ico / label.png    # 程序图标资源
@@ -120,11 +128,12 @@ label-printer/
 3. 调用 Windows 系统打印对话框
 4. PNG文件保留在 `outputs` 文件夹供后续使用
 
-### 参数保存
-使用 JSON 格式保存用户设置，包括：
-- 界面语言
+### 参数保存与验证
+使用 JSON 格式保存用户设置，并自动验证配置有效性：
+- 界面语言（zh/th）
 - 排版参数（行数、列数、边距、间距）
-- 页面方向
+- 页面方向（landscape/portrait）
+- 自动验证并修正无效配置值
 
 ## 📝 开发说明 | Development
 
@@ -145,13 +154,14 @@ pyinstaller label_bundle.spec
 ### 模块概览 | Code Layout
 
 - **label_gui_qt.py**: 程序入口，负责加载字体/启动画面并实例化主窗口
+- **__version__.py**: 版本信息管理（版本号、作者、描述）
 - **ui/**
   - `main_window.py`: `LabelPrinterQt` 主窗口逻辑（布局、信号槽、业务协调）
   - `control_panel.py`: 左侧控制面板
   - `preview_panel.py`: 右侧预览面板（固定长宽比）
-  - `styles.py`: 全局样式表应用
-- **services/pdf_service.py**: PDF 拼版、预览转换、PDF→PNG 打印辅助
-- **config/**: 默认设置常量与设置读写服务
+  - `styles.py`: 全局样式表与 UI 常量（`AppConstants`）
+- **services/pdf_service.py**: PDF 拼版、预览转换、PDF→PNG 打印辅助、参数验证
+- **config/**: 默认设置常量、设置读写服务、配置验证器
 - **i18n/**: 多语言文案字典及访问接口
 - **widgets/**: 通用控件（如 `AspectRatioLabel`）与阴影效果
 
@@ -165,7 +175,7 @@ MIT License
 
 ## 👨‍💻 作者 | Author
 
-开发者: [Your Name]
+开发者: CW
 
 ## 🙏 致谢 | Acknowledgments
 

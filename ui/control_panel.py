@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from widgets import add_shadow
+from .styles import AppConstants
 
 
 class ControlPanel(QWidget):
@@ -21,7 +22,7 @@ class ControlPanel(QWidget):
         self.title_label = QLabel(self.main.get_text('main_title'))
         self.title_label.setObjectName("titleLabel")
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setFixedHeight(self.main.TITLE_BUTTON_HEIGHT)
+        self.title_label.setFixedHeight(AppConstants.TITLE_BUTTON_HEIGHT)
         add_shadow(self.title_label)
         title_layout.addWidget(self.title_label)
 
@@ -29,7 +30,7 @@ class ControlPanel(QWidget):
         self.lang_btn.setObjectName("langBtn")
         self.lang_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.lang_btn.clicked.connect(self.main.switch_language)
-        self.lang_btn.setFixedSize(80, self.main.TITLE_BUTTON_HEIGHT)
+        self.lang_btn.setFixedSize(80, AppConstants.TITLE_BUTTON_HEIGHT)
         add_shadow(self.lang_btn)
         title_layout.addWidget(self.lang_btn)
 
@@ -52,7 +53,7 @@ class ControlPanel(QWidget):
         self.preview_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.preview_btn.clicked.connect(self.main.generate_preview)
         self.preview_btn.setEnabled(False)
-        self.preview_btn.setFixedHeight(self.main.BUTTON_HEIGHT)
+        self.preview_btn.setFixedHeight(AppConstants.BUTTON_HEIGHT)
         add_shadow(self.preview_btn)
         layout.addWidget(self.preview_btn)
 
@@ -63,7 +64,7 @@ class ControlPanel(QWidget):
         self.generate_btn.setObjectName("generateBtn")
         self.generate_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.generate_btn.clicked.connect(self.main.generate_pdf)
-        self.generate_btn.setFixedHeight(self.main.BUTTON_HEIGHT)
+        self.generate_btn.setFixedHeight(AppConstants.BUTTON_HEIGHT)
         add_shadow(self.generate_btn)
         button_layout.addWidget(self.generate_btn)
 
@@ -71,7 +72,7 @@ class ControlPanel(QWidget):
         self.print_btn.setObjectName("printBtn")
         self.print_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.print_btn.clicked.connect(self.main.generate_and_print_pdf)
-        self.print_btn.setFixedHeight(self.main.BUTTON_HEIGHT)
+        self.print_btn.setFixedHeight(AppConstants.BUTTON_HEIGHT)
         add_shadow(self.print_btn)
         button_layout.addWidget(self.print_btn)
 

@@ -13,6 +13,14 @@ class PDFService:
         from reportlab.lib.pagesizes import A4, landscape
         from reportlab.lib.units import mm
 
+        # 输入参数验证
+        if rows <= 0 or cols <= 0:
+            raise ValueError("行数和列数必须大于0")
+        if margin_mm < 0 or spacing_mm < 0:
+            raise ValueError("边距和间距不能为负数")
+        if orientation not in ['landscape', 'portrait']:
+            raise ValueError("方向必须是 'landscape' 或 'portrait'")
+
         if orientation == 'landscape':
             page_size = landscape(A4)
         else:
@@ -31,11 +39,9 @@ class PDFService:
         if label_width <= 0 or label_height <= 0:
             raise ValueError(error_label_size_msg)
 
-        try:
-            img = Image.open(image_path)
-            img.load()
-        except Exception as exc:
-            raise Exception(f"无法读取图片: {exc}")
+        # 直接抛出原始异常，让调用层处理
+        img = Image.open(image_path)
+        img.load()
 
         c = canvas.Canvas(output_pdf, pagesize=page_size)
 

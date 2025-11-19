@@ -12,24 +12,10 @@ from i18n import LANGUAGES
 from services import PDFService
 from .control_panel import ControlPanel
 from .preview_panel import PreviewPanel
-from .styles import AppStyle
+from .styles import AppStyle, AppConstants
 
 
 class LabelPrinterQt(QMainWindow):
-    WINDOW_WIDTH = 1000
-    WINDOW_HEIGHT = 600
-
-    PREVIEW_WIDTH = 480
-    PREVIEW_HEIGHT = 480
-    PREVIEW_ASPECT_RATIO = 1 / 1
-
-    BUTTON_HEIGHT = 40
-    TITLE_BUTTON_HEIGHT = 45
-
-    LEFT_PANEL_MAX_WIDTH = 420
-
-    FONT_SIZE_NORMAL = 16
-    FONT_SIZE_TITLE = 20
 
     def __init__(self):
         super().__init__()
@@ -38,9 +24,16 @@ class LabelPrinterQt(QMainWindow):
         self.preview_generated = False
         self.pdf_service = PDFService()
         self.settings_service = SettingsService(CONFIG_FILE, DEFAULT_SETTINGS)
+        
+        # 设置保存防抖定时器
         self.settings_timer = QTimer()
         self.settings_timer.setSingleShot(True)
         self.settings_timer.timeout.connect(self.save_settings)
+        
+        # resize 防抖定时器
+        self.resize_timer = QTimer()
+        self.resize_timer.setSingleShot(True)
+        self.resize_timer.timeout.connect(self._handle_resize)
 
         settings = self.load_settings()
         self.current_lang = settings['language']
@@ -113,7 +106,7 @@ class LabelPrinterQt(QMainWindow):
     def init_ui(self):
         self.setWindowTitle(self.get_text('window_title'))
         self.setMinimumSize(1000, 538)
-        self.resize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+        self.resize(AppConstants.WINDOW_WIDTH, AppConstants.WINDOW_HEIGHT)
 
         icon_path = self.get_resource_path('label.ico')
         if os.path.exists(icon_path):
@@ -133,7 +126,7 @@ class LabelPrinterQt(QMainWindow):
         main_layout.setContentsMargins(20, 20, 20, 20)
 
         self.control_panel = ControlPanel(self)
-        self.control_panel.setMaximumWidth(self.LEFT_PANEL_MAX_WIDTH)
+        self.control_panel.setMaximumWidth(AppConstants.LEFT_PANEL_MAX_WIDTH)
         main_layout.addWidget(self.control_panel, stretch=2)
 
         self.preview_panel = PreviewPanel(self)
@@ -210,11 +203,11 @@ class LabelPrinterQt(QMainWindow):
         if not self.image_path:
             return
 
+        temp_pdf = "temp_preview.pdf"
         try:
             self.preview_label.setText(self.get_text('preview_generating'))
             QApplication.processEvents()
 
-            temp_pdf = "temp_preview.pdf"
             orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
 
             self.pdf_service.tile_label_image_to_pdf(
@@ -231,9 +224,6 @@ class LabelPrinterQt(QMainWindow):
             pixmap = self.pdf_service.pdf_to_pixmap(temp_pdf, zoom=3)
             self.show_preview_image(pixmap)
 
-            if os.path.exists(temp_pdf):
-                os.remove(temp_pdf)
-
             self.preview_generated = True
             self.update_button_states()
 
@@ -244,9 +234,20 @@ class LabelPrinterQt(QMainWindow):
                 self.get_text('error_preview').format(error=str(e))
             )
             self.preview_label.setText(self.get_text('preview_hint_click'))
+        finally:
+            # 确保临时文件总是被清理
+            if os.path.exists(temp_pdf):
+                os.remove(temp_pdf)
 
     def resizeEvent(self, event):
+        """窗口缩放事件，使用防抖优化性能"""
         super().resizeEvent(event)
+        if self.preview_generated and self.preview_pixmap and not self.preview_pixmap.isNull():
+            # 防抖：100ms后执行
+            self.resize_timer.start(100)
+
+    def _handle_resize(self):
+        """处理窗口缩放后的预览图更新"""
         if self.preview_generated and self.preview_pixmap and not self.preview_pixmap.isNull():
             self.show_preview_image()
 
@@ -270,6 +271,23 @@ class LabelPrinterQt(QMainWindow):
         count = self.rows_spin.value() * self.cols_spin.value()
         self.count_label.setText(self.get_text('count_label').format(count=count))
 
+    def _generate_pdf_internal(self):
+        """内部 PDF 生成逻辑，由 generate_pdf 和 generate_and_print_pdf 共用"""
+        output_pdf = self.generate_filename("pdf")
+        orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
+
+        self.pdf_service.tile_label_image_to_pdf(
+            image_path=self.image_path,
+            output_pdf=output_pdf,
+            rows=self.rows_spin.value(),
+            cols=self.cols_spin.value(),
+            margin_mm=self.margin_spin.value(),
+            spacing_mm=self.spacing_spin.value(),
+            orientation=orientation,
+            error_label_size_msg=self.get_text('error_label_size')
+        )
+        return output_pdf
+
     def generate_pdf(self):
         if not self.validate_image_file():
             return
@@ -283,19 +301,7 @@ class LabelPrinterQt(QMainWindow):
             return
 
         try:
-            output_pdf = self.generate_filename("pdf")
-            orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
-
-            self.pdf_service.tile_label_image_to_pdf(
-                image_path=self.image_path,
-                output_pdf=output_pdf,
-                rows=self.rows_spin.value(),
-                cols=self.cols_spin.value(),
-                margin_mm=self.margin_spin.value(),
-                spacing_mm=self.spacing_spin.value(),
-                orientation=orientation,
-                error_label_size_msg=self.get_text('error_label_size')
-            )
+            output_pdf = self._generate_pdf_internal()
 
             reply = QMessageBox.question(
                 self,
@@ -336,20 +342,8 @@ class LabelPrinterQt(QMainWindow):
             return
 
         try:
-            output_pdf = self.generate_filename("pdf")
+            output_pdf = self._generate_pdf_internal()
             output_png = self.generate_filename("png")
-            orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
-
-            self.pdf_service.tile_label_image_to_pdf(
-                image_path=self.image_path,
-                output_pdf=output_pdf,
-                rows=self.rows_spin.value(),
-                cols=self.cols_spin.value(),
-                margin_mm=self.margin_spin.value(),
-                spacing_mm=self.spacing_spin.value(),
-                orientation=orientation,
-                error_label_size_msg=self.get_text('error_label_size')
-            )
 
             self.pdf_service.pdf_to_png(output_pdf, output_png, dpi=300)
 

@@ -1,3 +1,21 @@
+class AppConstants:
+    """UI 布局常量"""
+    WINDOW_WIDTH = 1000
+    WINDOW_HEIGHT = 600
+
+    PREVIEW_WIDTH = 480
+    PREVIEW_HEIGHT = 480
+    PREVIEW_ASPECT_RATIO = 1 / 1
+
+    BUTTON_HEIGHT = 40
+    TITLE_BUTTON_HEIGHT = 45
+
+    LEFT_PANEL_MAX_WIDTH = 420
+
+    FONT_SIZE_NORMAL = 16
+    FONT_SIZE_TITLE = 20
+
+
 class AppStyle:
     STYLE_SHEET = """
         QMainWindow {

@@ -1,7 +1,7 @@
-from PyQt6.QtWidgets import QGroupBox, QVBoxLayout, QLabel
+from PyQt6.QtWidgets import QGroupBox, QVBoxLayout, QLabel, QSizePolicy
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QSizePolicy
 from widgets import AspectRatioLabel, add_shadow
+from .styles import AppConstants
 
 
 class PreviewPanel(QGroupBox):
@@ -14,7 +14,7 @@ class PreviewPanel(QGroupBox):
         layout = QVBoxLayout()
         layout.setSpacing(10)
 
-        self.preview_label = AspectRatioLabel(self.main.PREVIEW_ASPECT_RATIO)
+        self.preview_label = AspectRatioLabel(AppConstants.PREVIEW_ASPECT_RATIO)
         self.preview_label.setObjectName("previewLabel")
         self.preview_label.setMinimumWidth(400)
         self.preview_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)

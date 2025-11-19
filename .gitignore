@@ -17,10 +17,13 @@ dist/
 
 # 项目生成的文件
 *.pdf
-*.png
 
-# 输出文件夹
+# 输出文件夹（包括其中的PNG和PDF）
 outputs/
+
+# 例外: 保留必需的图标资源文件
+!label.png
+!label.ico
 
 # 配置文件（如果包含敏感信息）
 # settings.json
