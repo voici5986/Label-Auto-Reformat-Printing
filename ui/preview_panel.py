@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QGroupBox, QVBoxLayout, QLabel, QSizePolicy
 from PyQt6.QtCore import Qt
-from widgets import AspectRatioLabel, add_shadow
+from widgets import AspectRatioLabel, add_shadow, LoadingOverlay
 from .styles import AppConstants
 
 
@@ -32,5 +32,16 @@ class PreviewPanel(QGroupBox):
 
         self.setLayout(layout)
         add_shadow(self)
+        
+        # 添加加载遮罩层
+        self.loading_overlay = LoadingOverlay(self.preview_label)
+        
         self.main.preview_group = self
         self.main.preview_label = self.preview_label
+        self.main.loading_overlay = self.loading_overlay
+    
+    def resizeEvent(self, event):
+        """调整遮罩层大小以覆盖预览区域"""
+        super().resizeEvent(event)
+        if hasattr(self, 'loading_overlay'):
+            self.loading_overlay.setGeometry(self.preview_label.geometry())

@@ -15,6 +15,8 @@ A modern label batch printing tool that automatically arranges label images on A
 - 清晰直观的操作流程
 - 实时PDF预览功能
 - 响应式布局设计
+- 精致的视觉层次（组框边框、渐变背景）
+- 专业的加载动画（旋转指示器 + 半透明遮罩）
 
 ### 🌍 多语言支持
 - **中文** (简体中文)
@@ -101,7 +103,7 @@ label-printer/
 ├── i18n/                    # 多语言字典
 ├── services/                # 业务服务（PDF/PIL 处理、输入验证等）
 ├── ui/                      # 界面组件（主窗口、面板、样式、UI 常量）
-├── widgets/                 # 可复用自定义控件与特效
+├── widgets/                 # 可复用自定义控件（AspectRatioLabel、加载动画、特效）
 ├── outputs/                 # 自动生成的输出目录（PDF/PNG）
 ├── label.ico / label.png    # 程序图标资源
 ├── settings.json            # 用户设置（运行时自动生成/更新）
@@ -163,7 +165,7 @@ pyinstaller label_bundle.spec
 - **services/pdf_service.py**: PDF 拼版、预览转换、PDF→PNG 打印辅助、参数验证
 - **config/**: 默认设置常量、设置读写服务、配置验证器
 - **i18n/**: 多语言文案字典及访问接口
-- **widgets/**: 通用控件（如 `AspectRatioLabel`）与阴影效果
+- **widgets/**: 通用控件（`AspectRatioLabel`、`LoadingOverlay` 加载动画）与阴影效果
 
 ## 🤝 贡献 | Contributing
 

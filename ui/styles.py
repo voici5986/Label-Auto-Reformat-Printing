@@ -24,7 +24,7 @@ class AppStyle:
 
         QGroupBox {
             background-color: white;
-            border: none;
+            border: 1px solid #e8ecef;
             border-radius: 5px;
             margin-top: 0px;
             padding-top: 25px;
@@ -225,8 +225,9 @@ class AppStyle:
         }
 
         #previewLabel {
-            background-color: #ecf0f1;
-            border: 2px dashed #bdc3c7;
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                      stop:0 #ecf0f1, stop:1 #f5f6fa);
+            border: 3px dashed #bdc3c7;
             border-radius: 5px;
         }
     """

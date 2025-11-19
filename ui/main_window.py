@@ -205,7 +205,9 @@ class LabelPrinterQt(QMainWindow):
 
         temp_pdf = "temp_preview.pdf"
         try:
-            self.preview_label.setText(self.get_text('preview_generating'))
+            # 显示加载动画
+            self.loading_overlay.set_message(self.get_text('preview_generating'))
+            self.loading_overlay.show_loading()
             QApplication.processEvents()
 
             orientation = 'landscape' if self.landscape_radio.isChecked() else 'portrait'
@@ -235,6 +237,8 @@ class LabelPrinterQt(QMainWindow):
             )
             self.preview_label.setText(self.get_text('preview_hint_click'))
         finally:
+            # 隐藏加载动画
+            self.loading_overlay.hide_loading()
             # 确保临时文件总是被清理
             if os.path.exists(temp_pdf):
                 os.remove(temp_pdf)
