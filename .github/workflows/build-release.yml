@@ -24,6 +24,31 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
+    - name: 自动更新版本号（从 tag 提取）
+      run: |
+        # 从 tag 提取版本号（去掉开头的 v）
+        $tagName = "${{ github.ref_name }}"
+        $version = $tagName -replace '^v', ''
+        
+        Write-Host "📌 Tag: $tagName"
+        Write-Host "📌 提取的版本号: $version"
+        
+        # 读取原有的 __version__.py
+        $versionFile = Get-Content "__version__.py" -Raw
+        
+        # 替换版本号
+        $versionFile = $versionFile -replace '__version__ = ".*"', "__version__ = `"$version`""
+        
+        # 写回文件
+        $versionFile | Set-Content "__version__.py" -NoNewline
+        
+        Write-Host "✅ 版本号已自动更新为: $version"
+        
+        # 显示更新后的内容
+        Write-Host "`n更新后的 __version__.py:"
+        Get-Content "__version__.py"
+      shell: pwsh
+    
     - name: 动态生成 PyInstaller spec 文件
       run: |
         $specContent = @"
@@ -72,7 +97,7 @@ jobs:
             a.scripts,
             [],
             exclude_binaries=True,
-            name='标签打印工具',
+            name='Label-Auto-Reformat-Printing',
             debug=False,
             bootloader_ignore_signals=False,
             strip=False,
@@ -93,7 +118,7 @@ jobs:
             strip=False,
             upx=True,
             upx_exclude=[],
-            name='标签打印工具',
+            name='Label-Auto-Reformat-Printing',
         )
         "@
         
@@ -108,7 +133,7 @@ jobs:
     - name: 压缩打包文件
       run: |
         cd dist
-        Compress-Archive -Path "标签打印工具" -DestinationPath "LabelPrinter-Windows-x64.zip"
+        Compress-Archive -Path "Label-Auto-Reformat-Printing" -DestinationPath "Label-Auto-Reformat-Printing-Windows-x64.zip"
     
     - name: 获取版本号
       id: get_version
@@ -120,13 +145,15 @@ jobs:
     - name: 创建 Release
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/LabelPrinter-Windows-x64.zip
+        files: dist/Label-Auto-Reformat-Printing-Windows-x64.zip
         body: |
-          ## 🏷️ 标签打印工具 ${{ steps.get_version.outputs.version }}
+          ## 🏷️ 标签打印工具 | Label Auto Reformat Printing ${{ steps.get_version.outputs.version }}
           
-          ### 📦 下载说明
-          - **Windows 用户**：下载 `LabelPrinter-Windows-x64.zip` 并解压
-          - 解压后运行 `标签打印工具.exe` 即可使用
+          ### 📦 下载说明 | Download Instructions
+          - **Windows 用户**：下载 `Label-Auto-Reformat-Printing-Windows-x64.zip` 并解压
+          - **Windows Users**: Download `Label-Auto-Reformat-Printing-Windows-x64.zip` and extract
+          - 解压后运行 `Label-Auto-Reformat-Printing.exe` 即可使用
+          - Run `Label-Auto-Reformat-Printing.exe` after extraction
           
           ### ✨ 主要功能
           - Material Design 风格界面
