@@ -4,6 +4,6 @@
 版本信息
 """
 
-__version__ = "1.0.0"
-__author__ = "Label Printer Team"
+__version__ = "1.2.1"
+__author__ = "CW"
 __description__ = "标签批量打印排版工具 | Label Batch Printing Tool"
