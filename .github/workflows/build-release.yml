@@ -24,6 +24,83 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
+    - name: 动态生成 PyInstaller spec 文件
+      run: |
+        $specContent = @"
+        # -*- mode: python ; coding: utf-8 -*-
+
+        block_cipher = None
+
+        datas = [
+            ('label.ico', '.'),
+            ('label.png', '.'),
+        ]
+
+        hiddenimports = ['PIL._tkinter_finder']
+
+        excludes = [
+            'tkinter', 'matplotlib', 'numpy', 'pandas', 'scipy',
+            'IPython', 'notebook', 'pytest', 'unittest', 'setuptools', 'distutils',
+            'PyQt6.QtWebEngine', 'PyQt6.QtWebEngineCore', 'PyQt6.QtWebEngineWidgets',
+            'PyQt6.QtMultimedia', 'PyQt6.QtMultimediaWidgets',
+            'PyQt6.Qt3D', 'PyQt6.QtQuick', 'PyQt6.QtQml',
+            'PyQt6.QtBluetooth', 'PyQt6.QtNfc', 'PyQt6.QtPositioning', 'PyQt6.QtSensors',
+            'xml.etree', 'pydoc', 'doctest', '_pytest', 'test', 'tests',
+        ]
+
+        a = Analysis(
+            ['label_gui_qt.py'],
+            pathex=[],
+            binaries=[],
+            datas=datas,
+            hiddenimports=hiddenimports,
+            hookspath=[],
+            hooksconfig={},
+            runtime_hooks=[],
+            excludes=excludes,
+            win_no_prefer_redirects=False,
+            win_private_assemblies=False,
+            cipher=block_cipher,
+            noarchive=False,
+            optimize=2,
+        )
+
+        pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+        exe = EXE(
+            pyz,
+            a.scripts,
+            [],
+            exclude_binaries=True,
+            name='标签打印工具',
+            debug=False,
+            bootloader_ignore_signals=False,
+            strip=False,
+            upx=True,
+            console=False,
+            disable_windowed_traceback=False,
+            argv_emulation=False,
+            target_arch=None,
+            codesign_identity=None,
+            entitlements_file=None,
+            icon=['label.ico'],
+        )
+
+        coll = COLLECT(
+            exe,
+            a.binaries,
+            a.datas,
+            strip=False,
+            upx=True,
+            upx_exclude=[],
+            name='标签打印工具',
+        )
+        "@
+        
+        $specContent | Out-File -FilePath "label_bundle.spec" -Encoding UTF8
+        Write-Host "✅ spec 文件已生成"
+      shell: pwsh
+    
     - name: 使用 PyInstaller 打包
       run: |
         pyinstaller label_bundle.spec
@@ -59,9 +136,22 @@ jobs:
           - 精致的加载动画
           
           ### 📋 更新内容
-          请在此处填写本次更新的详细内容...
+          
+          #### 🎨 UI 视觉优化
+          - 新增 GroupBox 边框，提升界面层次感
+          - 预览区域使用渐变背景，边框加粗
+          - 添加专业的加载动画（旋转指示器 + 半透明遮罩）
+          
+          #### 🔧 代码质量改进
+          - 添加配置参数验证
+          - 添加输入参数验证
+          - UI 常量集中管理
+          - 优化临时文件清理
+          - 提取重复代码
+          - 窗口缩放性能优化
           
         draft: false
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
