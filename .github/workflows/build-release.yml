@@ -142,6 +142,41 @@ jobs:
         echo "version=$version" >> $env:GITHUB_OUTPUT
       shell: pwsh
     
+    - name: 从 CHANGELOG 提取更新内容
+      id: changelog
+      run: |
+        $version = "${{ github.ref_name }}"
+        $versionNum = $version -replace '^v', ''
+        
+        # 读取 CHANGELOG.md
+        $changelog = Get-Content "CHANGELOG.md" -Raw
+        
+        # 提取当前版本的更新内容
+        $pattern = "(?s)## \[$versionNum\].*?\n(.*?)(?=\n---|\n## \[|$)"
+        if ($changelog -match $pattern) {
+            $versionNotes = $matches[1].Trim()
+            
+            # 如果提取成功，使用提取的内容
+            if ($versionNotes) {
+                Write-Host "✅ 成功从 CHANGELOG.md 提取版本 $versionNum 的更新内容"
+                
+                # 转换为 GitHub Actions 输出格式（多行文本）
+                $delimiter = "EOF-CHANGELOG-$(Get-Random)"
+                echo "notes<<$delimiter" >> $env:GITHUB_OUTPUT
+                echo $versionNotes >> $env:GITHUB_OUTPUT
+                echo $delimiter >> $env:GITHUB_OUTPUT
+                
+                echo "found=true" >> $env:GITHUB_OUTPUT
+            } else {
+                Write-Host "⚠️ 未找到版本 $versionNum 的更新内容，将使用默认说明"
+                echo "found=false" >> $env:GITHUB_OUTPUT
+            }
+        } else {
+            Write-Host "⚠️ CHANGELOG.md 中未找到版本 $versionNum，将使用默认说明"
+            echo "found=false" >> $env:GITHUB_OUTPUT
+        }
+      shell: pwsh
+    
     - name: 创建 Release
       uses: softprops/action-gh-release@v1
       with:
@@ -155,27 +190,20 @@ jobs:
           - 解压后运行 `Label-Auto-Reformat-Printing.exe` 即可使用
           - Run `Label-Auto-Reformat-Printing.exe` after extraction
           
-          ### ✨ 主要功能
-          - Material Design 风格界面
-          - 支持中文/泰语双语
-          - PDF 预览和生成
-          - 参数自动保存
-          - 精致的加载动画
+          ---
           
-          ### 📋 更新内容
+          ### 📋 更新内容 | What's Changed
           
-          #### 🎨 UI 视觉优化
-          - 新增 GroupBox 边框，提升界面层次感
-          - 预览区域使用渐变背景，边框加粗
-          - 添加专业的加载动画（旋转指示器 + 半透明遮罩）
+          ${{ steps.changelog.outputs.found == 'true' && steps.changelog.outputs.notes || '请查看 CHANGELOG.md 了解详细更新内容' }}
           
-          #### 🔧 代码质量改进
-          - 添加配置参数验证
-          - 添加输入参数验证
-          - UI 常量集中管理
-          - 优化临时文件清理
-          - 提取重复代码
-          - 窗口缩放性能优化
+          ---
+          
+          ### ✨ 主要功能 | Key Features
+          - 🎨 Material Design 风格界面
+          - 🌍 支持中文/泰语双语 | Chinese/Thai bilingual support
+          - � PDF 预览和生成 | PDF preview and generation
+          - 💾 参数自动保存 | Auto-save settings
+          - 🎭 精致的加载动画 | Elegant loading animations
           
         draft: false
         prerelease: false
