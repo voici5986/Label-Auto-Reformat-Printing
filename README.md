@@ -47,11 +47,44 @@ A modern label batch printing tool that automatically arranges label images on A
 - 支持一键打开文件所在位置
 - PNG打印文件永久保留
 
-## 🚀 快速开始 | Quick Start
+## � 下载与安装 | Download & Install
+
+**对于普通用户 | For End Users**：
+
+无需安装 Python 或配置环境，直接下载即可使用。
+No Python required. Simply download and run.
+
+1. 访问发布页面: [**Releases 页面**](https://github.com/voici5986/Label-Auto-Reformat-Printing/releases)
+2. 下载最新版本的 `Label-Auto-Reformat-Printing-Windows-x64.zip`
+3. 解压后运行 `Label-Auto-Reformat-Printing.exe`
+
+---
+
+## 📖 使用说明 | Usage Guide
+
+### 1️⃣ 选择标签图片
+点击"浏览"按钮，选择要打印的标签图片文件（支持 PNG、JPG、JPEG 格式）
+
+### 2️⃣ 调整排版参数
+- **行数**: 设置每页纸上的标签行数
+- **列数**: 设置每页纸上的标签列数
+- **边距**: 设置页面四周的边距
+- **间距**: 设置标签之间的间距
+- **方向**: 选择横向或竖向排版
+
+### 3️⃣ 生成预览
+点击"🔄 生成预览"按钮，在右侧查看PDF效果
+
+### 4️⃣ 生成或打印
+- **📄 生成 PDF**: 保存PDF文件到 `outputs` 文件夹
+- **🖨️ 生成并打印**: 生成PDF和PNG，并调用打印对话框
+
+
+## 🚀 开发者指南 | Developer Guide
 
 ### 环境要求 | Requirements
 
-- Python 3.13 或更高版本
+- Python 3.12 或更高版本
 - Windows 10/11 (推荐)
 - [Poetry](https://python-poetry.org/) (推荐的依赖管理工具)
 
@@ -77,24 +110,6 @@ poetry run python label_gui_qt.py
 python label_gui_qt.py
 ```
 
-## 📖 使用说明 | Usage Guide
-
-### 1️⃣ 选择标签图片
-点击"浏览"按钮，选择要打印的标签图片文件（支持 PNG、JPG、JPEG 格式）
-
-### 2️⃣ 调整排版参数
-- **行数**: 设置每页纸上的标签行数
-- **列数**: 设置每页纸上的标签列数
-- **边距**: 设置页面四周的边距
-- **间距**: 设置标签之间的间距
-- **方向**: 选择横向或竖向排版
-
-### 3️⃣ 生成预览
-点击"🔄 生成预览"按钮，在右侧查看PDF效果
-
-### 4️⃣ 生成或打印
-- **📄 生成 PDF**: 保存PDF文件到 `outputs` 文件夹
-- **🖨️ 生成并打印**: 生成PDF和PNG，并调用打印对话框
 
 ## 📂 项目结构 | Project Structure
 
