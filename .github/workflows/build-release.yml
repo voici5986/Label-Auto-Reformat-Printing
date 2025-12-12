@@ -16,13 +16,15 @@ jobs:
     - name: 设置 Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.13'
+        cache: 'poetry'
     
-    - name: 安装依赖
+    - name: 安装 Poetry 和依赖
       run: |
-        python -m pip install --upgrade pip wheel
-        pip install -r requirements.txt
-        pip install pyinstaller
+        python -m pip install --upgrade pip
+        pip install poetry
+        poetry install
+        poetry run pip install pyinstaller
     
     - name: 自动更新版本号（从 tag 提取）
       run: |
@@ -128,12 +130,20 @@ jobs:
     
     - name: 使用 PyInstaller 打包
       run: |
-        pyinstaller label_bundle.spec
+        # 使用 poetry run 调用环境中的 pyinstaller
+        poetry run pyinstaller label_bundle.spec
     
     - name: 压缩打包文件
       run: |
         cd dist
         Compress-Archive -Path "Label-Auto-Reformat-Printing" -DestinationPath "Label-Auto-Reformat-Printing-Windows-x64.zip"
+    
+    - name: 上传构建产物 (Backup)
+      uses: actions/upload-artifact@v4
+      with:
+        name: Label-Auto-Reformat-Printing-Windows-x64
+        path: dist/Label-Auto-Reformat-Printing-Windows-x64.zip
+        retention-days: 5
     
     - name: 获取版本号
       id: get_version
@@ -209,4 +219,3 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
