@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "label"
-version = "0.1.0"
+version = "1.2.4"
 description = ""
-authors = ["voici5986 <qq475849258@gmail.com>"]
+authors = ["voici5986"]
 readme = "README.md"
 package-mode = false
 

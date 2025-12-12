@@ -10,8 +10,11 @@ venv/
 env/
 ENV/
 
+# Poetry
+poetry.toml
+
 # PyInstaller打包文件
-*.spec
+*.spec  
 build/
 dist/
 
@@ -47,3 +50,6 @@ desktop.ini
 *.tmp
 *.temp
 RELEASE_GUIDE.md
+
+# GitHub Actions
+worflow.txt

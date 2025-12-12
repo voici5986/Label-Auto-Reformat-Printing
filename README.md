@@ -51,7 +51,7 @@ A modern label batch printing tool that automatically arranges label images on A
 
 ### 环境要求 | Requirements
 
-- Python 3.8 或更高版本
+- Python 3.12 或更高版本
 - Windows 10/11 (推荐)
 
 ### 安装依赖 | Installation
