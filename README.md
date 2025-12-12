@@ -58,7 +58,6 @@ No Python required. Simply download and run.
 2. 下载最新版本的 `Label-Auto-Reformat-Printing-Windows-x64.zip`
 3. 解压后运行 `Label-Auto-Reformat-Printing.exe`
 
----
 
 ## 📖 使用说明 | Usage Guide
 
@@ -79,6 +78,7 @@ No Python required. Simply download and run.
 - **📄 生成 PDF**: 保存PDF文件到 `outputs` 文件夹
 - **🖨️ 生成并打印**: 生成PDF和PNG，并调用打印对话框
 
+---
 
 ## 🚀 开发者指南 | Developer Guide
 
