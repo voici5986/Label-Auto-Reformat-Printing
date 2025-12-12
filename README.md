@@ -51,14 +51,15 @@ A modern label batch printing tool that automatically arranges label images on A
 
 ### 环境要求 | Requirements
 
-- Python 3.12 或更高版本
+- Python 3.13 或更高版本
 - Windows 10/11 (推荐)
+- [Poetry](https://python-poetry.org/) (推荐的依赖管理工具)
 
 ### 安装依赖 | Installation
 
-**推荐方式**（使用 requirements.txt）：
+**推荐方式**（使用 Poetry）：
 ```bash
-pip install -r requirements.txt
+poetry install
 ```
 
 **或手动安装**：
@@ -69,6 +70,10 @@ pip install PyQt6 Pillow reportlab PyMuPDF
 ### 运行程序 | Run
 
 ```bash
+# 使用 Poetry 运行
+poetry run python label_gui_qt.py
+
+# 或在激活的虚拟环境中运行
 python label_gui_qt.py
 ```
 
@@ -141,14 +146,15 @@ label-printer/
 
 ### 打包为EXE
 
-使用 PyInstaller 打包程序：
+使用 PyInstaller 打包程序（推荐使用 Poetry 调用）：
 
 ```bash
 # 推荐：使用项目提供的目录模式 spec（包含排除/隐藏导入优化）
-pyinstaller label_bundle.spec
+poetry run pyinstaller label_bundle.spec
 
 # 输出目录
-# dist/标签打印工具/
+# dist/Label-Auto-Reformat-Printing-Windows-x64.zip (包含自动压缩的发布包)
+# dist/Label-Auto-Reformat-Printing/ (解压后的文件夹)
 ```
 
 > 如需单文件模式，可在 `label_bundle.spec` 基础上调整 `EXE` 与 `COLLECT` 配置，或另写专用 spec。
