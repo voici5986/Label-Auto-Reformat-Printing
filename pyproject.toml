@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "label"
+version = "0.1.0"
+description = ""
+authors = ["voici5986 <qq475849258@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.13"
+pyqt6 = ">=6.10.1,<7.0.0"
+pillow = ">=12.0.0,<13.0.0"
+reportlab = ">=4.4.5,<5.0.0"
+pymupdf = ">=1.26.6,<2.0.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"
