@@ -21,6 +21,18 @@ dist/
 # 项目生成的文件
 *.pdf
 
+# 图片文件（排除必需的资源文件）
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif
+/*.bmp
+/*.svg
+/*.ico
+/*.webp
+/*.tiff
+/*.tif
+
 # 输出文件夹（包括其中的PNG和PDF）
 outputs/
 
