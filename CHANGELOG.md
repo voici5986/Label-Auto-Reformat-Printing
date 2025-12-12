@@ -64,6 +64,7 @@
 
 ---
 
-[Unreleased]: https://github.com/你的用户名/你的仓库名/compare/v1.2.1...HEAD
-[1.2.1]: https://github.com/你的用户名/你的仓库名/compare/v1.0.0...v1.2.1
-[1.0.0]: https://github.com/你的用户名/你的仓库名/releases/tag/v1.0.0
+[Unreleased]: https://github.com/voici5986/Label-Auto-Reformat-Printing/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/voici5986/Label-Auto-Reformat-Printing/compare/v1.2.3...v1.2.4
+[1.2.3]: https://github.com/voici5986/Label-Auto-Reformat-Printing/compare/v1.0.0...v1.2.3
+[1.0.0]: https://github.com/voici5986/Label-Auto-Reformat-Printing/releases/tag/v1.0.0

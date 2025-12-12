@@ -4,9 +4,11 @@
 
 A modern label batch printing tool that automatically arranges label images on A4 paper to generate PDFs, with real-time preview and direct printing capabilities.
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![PyQt6](https://img.shields.io/badge/PyQt6-6.0+-green.svg)
+![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)
+![PyQt6](https://img.shields.io/badge/PyQt6-6.10.1+-green.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+[📅 更新日志 | Changelog](CHANGELOG.md)
 
 ## ✨ 主要特性 | Key Features
 
@@ -47,7 +49,7 @@ A modern label batch printing tool that automatically arranges label images on A
 - 支持一键打开文件所在位置
 - PNG打印文件永久保留
 
-## � 下载与安装 | Download & Install
+## 📥 下载与安装 | Download & Install
 
 **对于普通用户 | For End Users**：
 
@@ -166,11 +168,11 @@ label-printer/
 ```bash
 # 推荐：使用项目提供的目录模式 spec（包含排除/隐藏导入优化）
 poetry run pyinstaller label_bundle.spec
-
-# 输出目录
-# dist/Label-Auto-Reformat-Printing-Windows-x64.zip (包含自动压缩的发布包)
-# dist/Label-Auto-Reformat-Printing/ (解压后的文件夹)
 ```
+
+**输出目录说明**：
+- `dist/Label-Auto-Reformat-Printing-Windows-x64.zip`: 包含自动压缩的发布包
+- `dist/Label-Auto-Reformat-Printing/`: 解压后的文件夹
 
 > 如需单文件模式，可在 `label_bundle.spec` 基础上调整 `EXE` 与 `COLLECT` 配置，或另写专用 spec。
 
