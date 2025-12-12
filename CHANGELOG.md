@@ -17,6 +17,7 @@
 - 优化构建流程：迁移至 Poetry 依赖管理
 - 增加构建产物备份 (Artifacts Upload)
 - 升级 Python 版本至 3.13
+- 更新readme文档
 
 ### 修复 (Fixed)
 - 修复 PyInstaller 打包时缺少依赖的问题

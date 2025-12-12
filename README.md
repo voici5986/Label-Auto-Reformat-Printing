@@ -84,7 +84,7 @@ No Python required. Simply download and run.
 
 ### 环境要求 | Requirements
 
-- Python 3.12 或更高版本
+- Python 3.13
 - Windows 10/11 (推荐)
 - [Poetry](https://python-poetry.org/) (推荐的依赖管理工具)
 
