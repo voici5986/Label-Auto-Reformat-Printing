@@ -6,7 +6,7 @@
 
 **本仓库已不再维护。** 项目已用 [新语言] 重写，请访问新仓库:
 
-👉 **[LabelPilot]([https://github.com/voici5986/LabelPilot])**
+👉 **[LabelPilot](https://github.com/voici5986/LabelPilot)**
 
 A modern label batch printing tool that automatically arranges label images on A4 paper to generate PDFs, with real-time preview and direct printing capabilities.
 
