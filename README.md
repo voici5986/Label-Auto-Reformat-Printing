@@ -7,9 +7,7 @@
 > [!IMPORTANT]
 > **本仓库已不再维护。** 
 
-** 项目已用 [React] 重写，请访问新仓库:
-
-👉 **[LabelPilot](https://github.com/voici5986/LabelPilot)**
+**项目已用 [React] 重写，请访问新仓库:** 👉 **[LabelPilot](https://github.com/voici5986/LabelPilot)**👉 
 
 
 # 🏷️ 标签打印排版工具 | Label Printer
