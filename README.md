@@ -1,8 +1,11 @@
 <div align="center">
 
-![WARNING](https://img.shields.io/badge/⚠️_此项目已迁移-red?style=for-the-badge)
+# ⚠️ 此项目已迁移 ⚠️
 
-**本仓库已不再维护。
+</div>
+
+> [!IMPORTANT]
+> **本仓库已不再维护。** 
 
 ** 项目已用 [React] 重写，请访问新仓库:
 
