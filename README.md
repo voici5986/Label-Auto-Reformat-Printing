@@ -8,6 +8,8 @@
 > **本仓库已不再维护。**
 > 
 > 项目已用 React 重写，请访问新仓库：👉 **[LabelPilot](https://github.com/voici5986/LabelPilot)**
+> 
+> 如需下载使用本项目请查看[Releases](https://github.com/voici5986/Label-Auto-Reformat-Printing/releases)
 
 ---
 
