@@ -1,4 +1,6 @@
-# ⚠️ 此项目已迁移
+<div align="center">
+
+![WARNING](https://img.shields.io/badge/⚠️_此项目已迁移-red?style=for-the-badge)
 
 **本仓库已不再维护。
 
