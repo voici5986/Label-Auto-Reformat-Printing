@@ -2,6 +2,12 @@
 
 一个现代化的标签批量打印排版工具，支持将标签图片自动排列到A4纸上生成PDF，并提供实时预览和直接打印功能。
 
+# ⚠️ 此项目已迁移
+
+**本仓库已不再维护。** 项目已用 [新语言] 重写，请访问新仓库:
+
+👉 **[新仓库名称]([https://github.com/你的用户名/新仓库名](https://github.com/voici5986/LabelPilot))**
+
 A modern label batch printing tool that automatically arranges label images on A4 paper to generate PDFs, with real-time preview and direct printing capabilities.
 
 ![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)
